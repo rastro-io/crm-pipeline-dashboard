@@ -111,6 +111,78 @@
       "nextStep": "Review annual plan pricing",
       "lastActivityDays": 31,
       "contactCoverage": 1
+    },
+    {
+      "id": "opp-206",
+      "accountId": "acct-104",
+      "name": "Helio priority expansion",
+      "stage": "Proposal",
+      "amount": 75000,
+      "probability": 50,
+      "closeDate": "2026-06-20",
+      "nextStep": "Confirm stakeholder workshop",
+      "lastActivityDays": 9,
+      "contactCoverage": 2
+    },
+    {
+      "id": "opp-207",
+      "accountId": "acct-104",
+      "name": "Helio exact amount boundary",
+      "stage": "Discovery",
+      "amount": 50000,
+      "probability": 30,
+      "closeDate": "2026-06-10",
+      "nextStep": "Review evaluation results",
+      "lastActivityDays": 8,
+      "contactCoverage": 2
+    },
+    {
+      "id": "opp-208",
+      "accountId": "acct-104",
+      "name": "Helio exact activity boundary",
+      "stage": "Qualified",
+      "amount": 55000,
+      "probability": 25,
+      "closeDate": "2026-06-10",
+      "nextStep": "Schedule discovery",
+      "lastActivityDays": 7,
+      "contactCoverage": 2
+    },
+    {
+      "id": "opp-209",
+      "accountId": "acct-104",
+      "name": "Helio 30-day boundary",
+      "stage": "Negotiation",
+      "amount": 55000,
+      "probability": 65,
+      "closeDate": "2026-06-27",
+      "nextStep": "Send revised agreement",
+      "lastActivityDays": 8,
+      "contactCoverage": 2
+    },
+    {
+      "id": "opp-210",
+      "accountId": "acct-104",
+      "name": "Helio 31-day boundary",
+      "stage": "Proposal",
+      "amount": 55000,
+      "probability": 50,
+      "closeDate": "2026-06-28",
+      "nextStep": "Confirm business case",
+      "lastActivityDays": 8,
+      "contactCoverage": 2
+    },
+    {
+      "id": "opp-211",
+      "accountId": "acct-104",
+      "name": "Helio past-due opportunity",
+      "stage": "Proposal",
+      "amount": 55000,
+      "probability": 50,
+      "closeDate": "2026-05-27",
+      "nextStep": "Reconfirm close plan",
+      "lastActivityDays": 8,
+      "contactCoverage": 2
     }
   ],
   "contacts": [
