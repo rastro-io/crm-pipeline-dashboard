@@ -222,4 +222,65 @@ describe("selectHighPriorityDeals", () => {
       ]
     );
   });
+
+  it("returns every reason in contract order when both rules qualify a deal", () => {
+    const bothRulesData = {
+      accounts: [
+        {
+          id: "acct-both",
+          segment: "Enterprise",
+          health: "At Risk"
+        }
+      ],
+      opportunities: [
+        {
+          id: "opp-both",
+          accountId: "acct-both",
+          amount: 50001,
+          lastActivityDays: 8,
+          closeDate: "2026-06-01"
+        }
+      ]
+    };
+
+    assert.deepEqual(selectHighPriorityDeals(bothRulesData, "2026-05-28"), [
+      {
+        ...bothRulesData.opportunities[0],
+        account: bothRulesData.accounts[0],
+        reasons: [
+          "Amount exceeds $50,000",
+          "No activity in more than 7 days",
+          "Close date is within the next 30 days",
+          "Enterprise account health is At Risk"
+        ]
+      }
+    ]);
+  });
+
+  it("uses a supplied non-default reference date for the standard close-date window", () => {
+    const changingWindowData = {
+      accounts: [
+        {
+          id: "acct-window",
+          segment: "Mid-Market",
+          health: "Healthy"
+        }
+      ],
+      opportunities: [
+        {
+          id: "opp-window",
+          accountId: "acct-window",
+          amount: 60000,
+          lastActivityDays: 9,
+          closeDate: "2026-06-28"
+        }
+      ]
+    };
+
+    assert.deepEqual(selectHighPriorityDeals(changingWindowData, "2026-05-28"), []);
+    assert.deepEqual(
+      selectHighPriorityDeals(changingWindowData, "2026-05-29").map((opportunity) => opportunity.id),
+      ["opp-window"]
+    );
+  });
 });
