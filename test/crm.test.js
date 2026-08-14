@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
@@ -8,9 +9,13 @@ import {
   forecastCategory,
   riskLabel,
   scoreDealRisk,
+  selectHighPriorityDeals,
   summarizeOwners,
   summarizePipeline
 } from "../src/crm.js";
+
+const fixtureData = JSON.parse(readFileSync(new URL("../data/crm.json", import.meta.url), "utf8"));
+const highPriorityReferenceDate = "2026-05-28";
 
 const data = {
   accounts: [
@@ -161,3 +166,60 @@ describe("owner and account helpers", () => {
   });
 });
 
+describe("selectHighPriorityDeals", () => {
+  it("selects standard-rule deals with account context and every standard reason in order", () => {
+    const selected = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate);
+    const opportunity = selected.find((item) => item.id === "opp-206");
+
+    assert.equal(opportunity.account.id, "acct-104");
+    assert.deepEqual(opportunity.reasons, [
+      "Amount exceeds $50,000",
+      "No activity in more than 7 days",
+      "Close date is within the next 30 days"
+    ]);
+  });
+
+  it("selects Enterprise accounts with At Risk health regardless of close date", () => {
+    const selected = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate);
+    const opportunity = selected.find((item) => item.id === "opp-201");
+
+    assert.deepEqual(opportunity.reasons, ["Enterprise account health is At Risk"]);
+    assert.equal(opportunity.closeDate, "2026-06-28");
+  });
+
+  it("excludes deals that satisfy neither approved rule", () => {
+    const selectedIds = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate).map((item) => item.id);
+
+    assert.equal(selectedIds.includes("opp-205"), false);
+  });
+
+  it("applies the strict amount and activity boundaries", () => {
+    const selectedIds = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate).map((item) => item.id);
+
+    assert.equal(selectedIds.includes("opp-207"), false);
+    assert.equal(selectedIds.includes("opp-208"), false);
+  });
+
+  it("includes the 30-day close boundary and excludes 31-day and past-due standard candidates", () => {
+    const selectedIds = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate).map((item) => item.id);
+
+    assert.equal(selectedIds.includes("opp-209"), true);
+    assert.equal(selectedIds.includes("opp-210"), false);
+    assert.equal(selectedIds.includes("opp-211"), false);
+  });
+
+  it("returns only the approved fixture qualifiers in source order", () => {
+    const selected = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate);
+
+    assert.deepEqual(selected.map((item) => item.id), ["opp-201", "opp-206", "opp-209"]);
+    assert.deepEqual(
+      [...new Set(selected.flatMap((item) => item.reasons))],
+      [
+        "Enterprise account health is At Risk",
+        "Amount exceeds $50,000",
+        "No activity in more than 7 days",
+        "Close date is within the next 30 days"
+      ]
+    );
+  });
+});
