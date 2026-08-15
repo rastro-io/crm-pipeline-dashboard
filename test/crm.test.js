@@ -283,4 +283,66 @@ describe("selectHighPriorityDeals", () => {
       ["opp-window"]
     );
   });
+
+  it("selects a Healthy non-Enterprise standard candidate closing on the supplied reference date", () => {
+    const closeDateBoundaryData = {
+      accounts: [
+        {
+          id: "acct-close-date-boundary",
+          segment: "Mid-Market",
+          health: "Healthy"
+        }
+      ],
+      opportunities: [
+        {
+          id: "opp-close-date-boundary",
+          accountId: "acct-close-date-boundary",
+          amount: 50001,
+          lastActivityDays: 8,
+          closeDate: "2026-05-28"
+        }
+      ]
+    };
+
+    assert.deepEqual(selectHighPriorityDeals(closeDateBoundaryData, "2026-05-28"), [
+      {
+        ...closeDateBoundaryData.opportunities[0],
+        account: closeDateBoundaryData.accounts[0],
+        reasons: [
+          "Amount exceeds $50,000",
+          "No activity in more than 7 days",
+          "Close date is within the next 30 days"
+        ]
+      }
+    ]);
+  });
+
+  it("selects a past-due Enterprise At Risk candidate with only the alternate reason", () => {
+    const alternatePastDueData = {
+      accounts: [
+        {
+          id: "acct-alternate-past-due",
+          segment: "Enterprise",
+          health: "At Risk"
+        }
+      ],
+      opportunities: [
+        {
+          id: "opp-alternate-past-due",
+          accountId: "acct-alternate-past-due",
+          amount: 60000,
+          lastActivityDays: 9,
+          closeDate: "2026-05-27"
+        }
+      ]
+    };
+
+    assert.deepEqual(selectHighPriorityDeals(alternatePastDueData, "2026-05-28"), [
+      {
+        ...alternatePastDueData.opportunities[0],
+        account: alternatePastDueData.accounts[0],
+        reasons: ["Enterprise account health is At Risk"]
+      }
+    ]);
+  });
 });

@@ -41,6 +41,7 @@ Implement a pure `src/crm.js` selector that maps accounts by ID, evaluates the t
 - `npm test` passed 15 tests after implementation and post-commit.
 - Remediation coverage adds a self-contained combined-rule case that asserts all four reasons in contract order, plus a non-default reference-date case that changes a standard deal from 31 days (excluded) to 30 days (included).
 - The remediation validation run passed 17 tests. `git diff --check` is run again before the remediation commit.
+- Remediation cycle 2 adds deterministic zero-day standard-rule coverage for a Healthy non-Enterprise account and past-due alternate-rule coverage for an Enterprise `At Risk` account; all 19 tests passed with `src/crm.js` unchanged.
 
 ## Progress Log
 
@@ -48,3 +49,4 @@ Implement a pure `src/crm.js` selector that maps accounts by ID, evaluates the t
 | --- | --- | --- | --- |
 | 2026-08-14 | Initial implementation complete. | Build agent | Added pure selector, feature artifacts, and approved fixture boundary coverage; 15 tests passed. |
 | 2026-08-14 | Review remediation complete. | Build agent | Added combined-rule reason-order and non-default reference-date tests; 17 tests passed. |
+| 2026-08-14 | Remediation cycle 2 complete. | Build agent | Added zero-day standard and past-due alternate regression tests; 19 tests passed without production changes. |
