@@ -9,9 +9,9 @@ const HEALTH_RISK = {
 const HIGH_PRIORITY_REFERENCE_DATE = "2026-05-28";
 
 const HIGH_PRIORITY_REASONS = {
-  amount: "Amount exceeds $50,000",
-  activity: "No activity in more than 7 days",
-  closeDate: "Close date is within the next 30 days",
+  amount: (amount) => `Amount $${amount.toLocaleString("en-US")} exceeds $50,000`,
+  activity: (lastActivityDays) => `No activity in ${lastActivityDays} days`,
+  closeDate: (daysToClose) => `Close date is in ${daysToClose} days`,
   accountHealth: "Enterprise account health is At Risk"
 };
 
@@ -82,7 +82,11 @@ export function selectHighPriorityDeals(data, referenceDate = HIGH_PRIORITY_REFE
 
     const reasons = [];
     if (meetsStandardRule) {
-      reasons.push(HIGH_PRIORITY_REASONS.amount, HIGH_PRIORITY_REASONS.activity, HIGH_PRIORITY_REASONS.closeDate);
+      reasons.push(
+        HIGH_PRIORITY_REASONS.amount(opportunity.amount),
+        HIGH_PRIORITY_REASONS.activity(opportunity.lastActivityDays),
+        HIGH_PRIORITY_REASONS.closeDate(daysToClose)
+      );
     }
     if (meetsAlternateRule) reasons.push(HIGH_PRIORITY_REASONS.accountHealth);
 

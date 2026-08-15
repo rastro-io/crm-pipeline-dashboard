@@ -31,11 +31,11 @@ Sales managers and future dashboard features can request the selected deals and 
 
 ## Explainability
 
-The selector returns reason strings in this order when applicable:
+The selector returns value-bearing reason strings in this order when applicable:
 
-1. `Amount exceeds $50,000`
-2. `No activity in more than 7 days`
-3. `Close date is within the next 30 days`
+1. `Amount $<amount> exceeds $50,000` (for example, `Amount $75,000 exceeds $50,000`)
+2. `No activity in <lastActivityDays> days` (for example, `No activity in 9 days`)
+3. `Close date is in <daysToClose> days` (for example, `Close date is in 23 days`)
 4. `Enterprise account health is At Risk`
 
 The first three are returned together only when the complete standard rule qualifies the deal; the fourth is independently returned when the alternate rule qualifies.
@@ -49,7 +49,7 @@ The first three are returned together only when the complete standard rule quali
 
 ## Testing and Success Criteria
 
-Unit tests cover both rules, exclusion, every reason, multiple reasons, and the approved amount, activity, close-date, and past-due boundaries. `npm test` must pass.
+Unit tests cover both rules, exclusion, every value-bearing reason, multiple reasons, and the approved amount, activity, close-date, and past-due boundaries. `npm test` must pass.
 
 ## Decision Log
 

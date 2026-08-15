@@ -9,7 +9,7 @@ Add one exported, pure selector to `src/crm.js`; add focused tests to `test/crm.
 `selectHighPriorityDeals(data, referenceDate = "2026-05-28")` accepts the current CRM fixture shape and an ISO date string controlled by the caller. It returns selected opportunities in their source order, each enriched with:
 
 - `account`: the matching account object
-- `reasons`: an ordered array of human-readable inclusion reasons
+- `reasons`: an ordered array of human-readable inclusion reasons carrying the qualifying amount, activity age, and close-date distance when the standard rule applies
 
 The selector uses UTC calendar-day arithmetic for date-only ISO values, so it does not depend on the wall clock or local timezone.
 
@@ -18,7 +18,7 @@ The selector uses UTC calendar-day arithmetic for date-only ISO values, so it do
 1. Standard selection requires all of: `amount > 50000`, `lastActivityDays > 7`, and `0 <= closeDate - referenceDate <= 30` calendar days.
 2. The standard rule never admits a past-due date.
 3. Alternate selection requires `account.segment === "Enterprise"` and `account.health === "At Risk"`; close date is irrelevant.
-4. A selected deal includes all applicable reasons in this fixed order: amount, activity, close window, Enterprise At Risk health.
+4. A selected deal includes all applicable reasons in this fixed order: `Amount $<amount> exceeds $50,000`, `No activity in <lastActivityDays> days`, `Close date is in <daysToClose> days`, Enterprise At Risk health.
 
 ## Compatibility and Safety
 
@@ -26,7 +26,7 @@ This selector does not call or alter risk scoring, forecast categorization, owne
 
 ## Test Requirements
 
-Tests provide a literal reference date and independently assert expected fixture identifiers and reason arrays. They cover standard and alternate inclusion, exclusion, multiple reasons, strict amount and activity thresholds, 30/31-day boundaries, and a past-due standard candidate.
+Tests provide a literal reference date and independently assert expected fixture identifiers and exact value-bearing reason arrays. They cover standard and alternate inclusion, exclusion, multiple reasons, strict amount and activity thresholds, 0/30/31-day boundaries, and a past-due standard candidate.
 
 ## Technical Decision Log
 
