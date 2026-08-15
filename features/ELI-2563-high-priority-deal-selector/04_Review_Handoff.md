@@ -9,7 +9,7 @@ Add the pure `selectHighPriorityDeals` helper. The approved contract is:
 - `$50,000` exactly does not qualify through the standard rule.
 - Returned reasons are human-readable and ordered: amount, stale activity, close window, then alternate account-health reason when both rules qualify.
 
-Links: ELI-2562 (approved high-priority deal rules) and ELI-2563 (selector/helper). The binding decision record is in `features/ELI-2562-high-priority-deal-rules/04_Approved_Decision_Record.md`.
+Links: [ELI-2562](https://linear.app/elizaai/issue/ELI-2562) (approved high-priority deal rules) and [ELI-2563](https://linear.app/elizaai/issue/ELI-2563) (selector/helper). The binding decision record is in `features/ELI-2562-high-priority-deal-rules/04_Approved_Decision_Record.md`.
 
 ## Changed files
 
