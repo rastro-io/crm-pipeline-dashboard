@@ -6,6 +6,15 @@ const HEALTH_RISK = {
   "At Risk": 24
 };
 
+const HIGH_PRIORITY_REFERENCE_DATE = "2026-05-28";
+
+const HIGH_PRIORITY_REASONS = {
+  amount: (amount) => `Amount $${amount.toLocaleString("en-US")} exceeds $50,000`,
+  activity: (lastActivityDays) => `No activity in ${lastActivityDays} days`,
+  closeDate: (daysToClose) => `Close date is in ${daysToClose} days`,
+  accountHealth: "Enterprise account health is At Risk"
+};
+
 export function enrichOpportunities(data) {
   return data.opportunities
     .map((opportunity) => {
@@ -54,6 +63,37 @@ export function forecastCategory(opportunity, riskScore) {
   return "Pipeline";
 }
 
+export function selectHighPriorityDeals(data, referenceDate = HIGH_PRIORITY_REFERENCE_DATE) {
+  const accountsById = new Map(data.accounts.map((account) => [account.id, account]));
+
+  return data.opportunities.flatMap((opportunity) => {
+    const account = accountsById.get(opportunity.accountId);
+    if (!account) return [];
+
+    const daysToClose = daysBetween(referenceDate, opportunity.closeDate);
+    const meetsStandardRule =
+      opportunity.amount > 50000 &&
+      opportunity.lastActivityDays > 7 &&
+      daysToClose >= 0 &&
+      daysToClose <= 30;
+    const meetsAlternateRule = account.segment === "Enterprise" && account.health === "At Risk";
+
+    if (!meetsStandardRule && !meetsAlternateRule) return [];
+
+    const reasons = [];
+    if (meetsStandardRule) {
+      reasons.push(
+        HIGH_PRIORITY_REASONS.amount(opportunity.amount),
+        HIGH_PRIORITY_REASONS.activity(opportunity.lastActivityDays),
+        HIGH_PRIORITY_REASONS.closeDate(daysToClose)
+      );
+    }
+    if (meetsAlternateRule) reasons.push(HIGH_PRIORITY_REASONS.accountHealth);
+
+    return [{ ...opportunity, account, reasons }];
+  });
+}
+
 export function summarizePipeline(data, owner = "all") {
   const opportunities = filterByOwner(enrichOpportunities(data), owner);
   const openTasks = filterTasksByOwner(data, owner).filter((task) => task.status === "open");
@@ -100,12 +140,18 @@ function filterTasksByOwner(data, owner) {
 }
 
 function daysUntil(dateString) {
-  const today = new Date("2026-05-28T00:00:00");
-  const target = new Date(`${dateString}T00:00:00`);
-  return Math.ceil((target - today) / 86_400_000);
+  return daysBetween(HIGH_PRIORITY_REFERENCE_DATE, dateString);
+}
+
+function daysBetween(startDateString, endDateString) {
+  return Math.ceil((utcDate(endDateString) - utcDate(startDateString)) / 86_400_000);
+}
+
+function utcDate(dateString) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return Date.UTC(year, month - 1, day);
 }
 
 function isOverdue(dateString) {
   return daysUntil(dateString) < 0;
 }
-

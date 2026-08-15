@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
@@ -8,9 +9,13 @@ import {
   forecastCategory,
   riskLabel,
   scoreDealRisk,
+  selectHighPriorityDeals,
   summarizeOwners,
   summarizePipeline
 } from "../src/crm.js";
+
+const fixtureData = JSON.parse(readFileSync(new URL("../data/crm.json", import.meta.url), "utf8"));
+const highPriorityReferenceDate = "2026-05-28";
 
 const data = {
   accounts: [
@@ -161,3 +166,191 @@ describe("owner and account helpers", () => {
   });
 });
 
+describe("selectHighPriorityDeals", () => {
+  it("selects standard-rule deals with account context and every standard reason in order", () => {
+    const selected = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate);
+    const opportunity = selected.find((item) => item.id === "opp-206");
+
+    assert.equal(opportunity.account.id, "acct-104");
+    assert.deepEqual(opportunity.reasons, [
+      "Amount $75,000 exceeds $50,000",
+      "No activity in 9 days",
+      "Close date is in 23 days"
+    ]);
+  });
+
+  it("selects Enterprise accounts with At Risk health regardless of close date", () => {
+    const selected = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate);
+    const opportunity = selected.find((item) => item.id === "opp-201");
+
+    assert.deepEqual(opportunity.reasons, ["Enterprise account health is At Risk"]);
+    assert.equal(opportunity.closeDate, "2026-06-28");
+  });
+
+  it("excludes deals that satisfy neither approved rule", () => {
+    const selectedIds = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate).map((item) => item.id);
+
+    assert.equal(selectedIds.includes("opp-205"), false);
+  });
+
+  it("applies the strict amount and activity boundaries", () => {
+    const selectedIds = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate).map((item) => item.id);
+
+    assert.equal(selectedIds.includes("opp-207"), false);
+    assert.equal(selectedIds.includes("opp-208"), false);
+  });
+
+  it("includes the 30-day close boundary and excludes 31-day and past-due standard candidates", () => {
+    const selectedIds = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate).map((item) => item.id);
+
+    assert.equal(selectedIds.includes("opp-209"), true);
+    assert.equal(selectedIds.includes("opp-210"), false);
+    assert.equal(selectedIds.includes("opp-211"), false);
+    assert.deepEqual(
+      selectHighPriorityDeals(fixtureData, highPriorityReferenceDate).find((item) => item.id === "opp-209").reasons,
+      ["Amount $55,000 exceeds $50,000", "No activity in 8 days", "Close date is in 30 days"]
+    );
+  });
+
+  it("selects a Healthy non-Enterprise standard candidate closing on the reference date", () => {
+    const sameDayStandardData = {
+      accounts: [
+        {
+          id: "acct-same-day",
+          segment: "Mid-Market",
+          health: "Healthy"
+        }
+      ],
+      opportunities: [
+        {
+          id: "opp-same-day",
+          accountId: "acct-same-day",
+          amount: 50001,
+          lastActivityDays: 8,
+          closeDate: "2026-05-28"
+        }
+      ]
+    };
+
+    assert.deepEqual(selectHighPriorityDeals(sameDayStandardData, "2026-05-28"), [
+      {
+        ...sameDayStandardData.opportunities[0],
+        account: sameDayStandardData.accounts[0],
+        reasons: [
+          "Amount $50,001 exceeds $50,000",
+          "No activity in 8 days",
+          "Close date is in 0 days"
+        ]
+      }
+    ]);
+  });
+
+  it("selects a past-due Enterprise At Risk candidate with only the alternate reason", () => {
+    const pastDueAlternateData = {
+      accounts: [
+        {
+          id: "acct-past-due-alternate",
+          segment: "Enterprise",
+          health: "At Risk"
+        }
+      ],
+      opportunities: [
+        {
+          id: "opp-past-due-alternate",
+          accountId: "acct-past-due-alternate",
+          amount: 50001,
+          lastActivityDays: 8,
+          closeDate: "2026-05-27"
+        }
+      ]
+    };
+
+    assert.deepEqual(selectHighPriorityDeals(pastDueAlternateData, "2026-05-28"), [
+      {
+        ...pastDueAlternateData.opportunities[0],
+        account: pastDueAlternateData.accounts[0],
+        reasons: ["Enterprise account health is At Risk"]
+      }
+    ]);
+  });
+
+  it("returns only the approved fixture qualifiers in source order", () => {
+    const selected = selectHighPriorityDeals(fixtureData, highPriorityReferenceDate);
+
+    assert.deepEqual(selected.map((item) => item.id), ["opp-201", "opp-206", "opp-209"]);
+    assert.deepEqual(selected.map((item) => item.reasons), [
+      ["Enterprise account health is At Risk"],
+      ["Amount $75,000 exceeds $50,000", "No activity in 9 days", "Close date is in 23 days"],
+      ["Amount $55,000 exceeds $50,000", "No activity in 8 days", "Close date is in 30 days"]
+    ]);
+  });
+
+  it("returns every reason in contract order when both rules qualify a deal", () => {
+    const bothRulesData = {
+      accounts: [
+        {
+          id: "acct-both",
+          segment: "Enterprise",
+          health: "At Risk"
+        }
+      ],
+      opportunities: [
+        {
+          id: "opp-both",
+          accountId: "acct-both",
+          amount: 50001,
+          lastActivityDays: 8,
+          closeDate: "2026-06-01"
+        }
+      ]
+    };
+
+    assert.deepEqual(selectHighPriorityDeals(bothRulesData, "2026-05-28"), [
+      {
+        ...bothRulesData.opportunities[0],
+        account: bothRulesData.accounts[0],
+        reasons: [
+          "Amount $50,001 exceeds $50,000",
+          "No activity in 8 days",
+          "Close date is in 4 days",
+          "Enterprise account health is At Risk"
+        ]
+      }
+    ]);
+  });
+
+  it("uses a supplied non-default reference date for the standard close-date window", () => {
+    const changingWindowData = {
+      accounts: [
+        {
+          id: "acct-window",
+          segment: "Mid-Market",
+          health: "Healthy"
+        }
+      ],
+      opportunities: [
+        {
+          id: "opp-window",
+          accountId: "acct-window",
+          amount: 60000,
+          lastActivityDays: 9,
+          closeDate: "2026-06-28"
+        }
+      ]
+    };
+
+    assert.deepEqual(selectHighPriorityDeals(changingWindowData, "2026-05-28"), []);
+    assert.deepEqual(
+      selectHighPriorityDeals(changingWindowData, "2026-05-29").map((opportunity) => ({
+        id: opportunity.id,
+        reasons: opportunity.reasons
+      })),
+      [
+        {
+          id: "opp-window",
+          reasons: ["Amount $60,000 exceeds $50,000", "No activity in 9 days", "Close date is in 30 days"]
+        }
+      ]
+    );
+  });
+});
